@@ -117,60 +117,122 @@ async def on_ready():
 @bot.command()
 async def help(ctx):
     embed = discord.Embed(
-        title="📚 Bot Commands",
-        description="Here are all available commands:",
+        title="📚 Complete Bot Command List",
+        description="All available commands and features",
         color=discord.Color.blue()
     )
     
+    # General Commands
     embed.add_field(
-        name="🎮 General",
-        value="`!ping` - Check if bot is alive\n`!help` - Show this message",
+        name="🎮 General Commands",
+        value="**!ping**\n"
+              "└─ Check if bot is alive and responsive\n\n"
+              "**!help**\n"
+              "└─ Display this help message with all commands",
         inline=False
     )
     
+    # Setup Command
     embed.add_field(
-        name="⚙️ Setup",
-        value="`!setup` - Configure bot settings (prefix, logs channel, admin role)",
+        name="⚙️ Setup & Configuration",
+        value="**!setup**\n"
+              "└─ Configure bot settings for your server\n"
+              "   • Change command prefix (default: !)\n"
+              "   • Set moderation logs channel\n"
+              "   • Set admin role\n"
+              "   • Requires: Administrator permission",
         inline=False
     )
     
+    # Moderation Commands
     embed.add_field(
-        name="⚖️ Moderation",
-        value="`!kick <member> [reason]` - Kick a member from server\n"
-              "`!ban <member> [reason]` - Ban a member from server\n"
-              "`!mute <member> <duration> [reason]` - Mute member for X seconds\n"
-              "`!unmute <member>` - Remove mute from member\n"
-              "`!warn <member> [reason]` - Warn a member",
+        name="⚖️ Moderation Commands",
+        value="**!kick <member> [reason]**\n"
+              "└─ Remove a member from the server\n"
+              "   • Requires: Kick Members permission\n\n"
+              "**!ban <member> [reason]**\n"
+              "└─ Permanently ban a member from the server\n"
+              "   • Requires: Ban Members permission\n\n"
+              "**!mute <member> <duration> [reason]**\n"
+              "└─ Timeout a member for X seconds\n"
+              "   • Duration: Time in seconds\n"
+              "   • Requires: Moderate Members permission\n\n"
+              "**!unmute <member>**\n"
+              "└─ Remove timeout from a muted member\n"
+              "   • Requires: Moderate Members permission\n\n"
+              "**!warn <member> [reason]**\n"
+              "└─ Issue a warning to a member\n"
+              "   • Logged in moderation database\n"
+              "   • Requires: Ban Members permission",
         inline=False
     )
     
+    # Logging Commands
     embed.add_field(
-        name="📋 Logs",
-        value="`!modlogs [member]` - View moderation logs\n"
-              "  • No args: Show last 10 server actions\n"
-              "  • With member: Show last 10 actions on that member",
+        name="📋 Moderation Logs",
+        value="**!modlogs [member]**\n"
+              "└─ View moderation logs\n"
+              "   • No args: Show last 10 server actions\n"
+              "   • With member: Show last 10 actions on that member\n"
+              "   • Requires: Ban Members permission",
         inline=False
     )
     
+    # Dashboard
     embed.add_field(
-        name="🌐 Dashboard",
-        value="View live moderation logs at: `http://your-domain:5000`\n"
-              "Auto-refreshes every 5 seconds",
+        name="🌐 Web Dashboard",
+        value="**Live Moderation Dashboard**\n"
+              "└─ Access at: `http://your-domain:5000`\n"
+              "   • View all moderation logs in real-time\n"
+              "   • Auto-refreshes every 5 seconds\n"
+              "   • Color-coded action types\n"
+              "   • Shows: User, Action, Reason, Moderator, Timestamp",
         inline=False
     )
     
+    # Permissions Summary
     embed.add_field(
-        name="📝 Permissions",
-        value="• `kick` - Requires Kick Members\n"
-              "• `ban` - Requires Ban Members\n"
-              "• `mute/unmute` - Requires Moderate Members\n"
-              "• `warn` - Requires Ban Members\n"
-              "• `modlogs` - Requires Ban Members\n"
-              "• `setup` - Requires Administrator",
+        name="🔐 Permission Requirements",
+        value="**Administrator**\n"
+              "└─ !setup\n\n"
+              "**Kick Members**\n"
+              "└─ !kick\n\n"
+              "**Ban Members**\n"
+              "└─ !ban, !warn, !modlogs\n\n"
+              "**Moderate Members**\n"
+              "└─ !mute, !unmute",
         inline=False
     )
     
-    embed.set_footer(text="Use !command --help for more info on specific commands")
+    # Database & Storage
+    embed.add_field(
+        name="💾 Data Storage",
+        value="**Moderation Logs**\n"
+              "└─ SQLite database (moderation.db)\n"
+              "   • Persists across restarts\n"
+              "   • Stores all actions with timestamps\n\n"
+              "**Server Configuration**\n"
+              "└─ JSON config file (config.json)\n"
+              "   • Per-guild settings\n"
+              "   • Prefix, logs channel, admin role",
+        inline=False
+    )
+    
+    # Usage Examples
+    embed.add_field(
+        name="📖 Usage Examples",
+        value="**Kick a user:**\n"
+              "`!kick @User spamming`\n\n"
+              "**Mute for 1 hour (3600 seconds):**\n"
+              "`!mute @User 3600 excessive caps`\n\n"
+              "**View logs for a user:**\n"
+              "`!modlogs @User`\n\n"
+              "**Configure bot:**\n"
+              "`!setup` → React to options",
+        inline=False
+    )
+    
+    embed.set_footer(text="For more info, use !command --help or contact server admins")
     await ctx.send(embed=embed)
 
 @bot.command()
