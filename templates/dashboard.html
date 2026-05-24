@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Moderation Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #1e1e1e; color: #fff; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { margin-bottom: 30px; color: #ff6b6b; }
+        table { width: 100%; border-collapse: collapse; background: #2d2d2d; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #444; }
+        th { background: #3d3d3d; font-weight: bold; }
+        tr:hover { background: #353535; }
+        .action { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .kick { background: #ff9800; }
+        .ban { background: #f44336; }
+        .mute { background: #2196f3; }
+        .warn { background: #ffc107; color: #000; }
+        .unmute { background: #4caf50; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Moderation Dashboard</h1>
+        <table id="logs">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Reason</th>
+                    <th>Moderator</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody id="logs-body">
+                <tr><td colspan="5">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <script>
+        async function loadLogs() {
+            const res = await fetch('/api/logs');
+            const logs = await res.json();
+            const tbody = document.getElementById('logs-body');
+            tbody.innerHTML = '';
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">No logs yet</td></tr>';
+                return;
+            }
+            logs.forEach(log => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${log.user_name}</td>
+                    <td><span class="action ${log.action.toLowerCase()}">${log.action}</span></td>
+                    <td>${log.reason}</td>
+                    <td>${log.moderator_name}</td>
+                    <td>${new Date(log.timestamp).toLocaleString()}</td>
+                `;
+            });
+        }
+        loadLogs();
+        setInterval(loadLogs, 5000);
+    </script>
+</body>
+</html>
