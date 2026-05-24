@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="sidebar-brand"><span class="dot"></span> Bot Dashboard</div>
+    <span class="nav-section">Overview</span>
+    <a href="#stats" class="nav-item">Stats</a>
+    <span class="nav-section">Settings</span>
+    <a href="#general" class="nav-item">General</a>
+    <a href="#moderation" class="nav-item">Moderation</a>
+    <a href="#tickets" class="nav-item">Tickets</a>
+    <a href="#skullboard" class="nav-item">Skullboard</a>
+    <span class="nav-section">Data</span>
+    <a href="#warnings" class="nav-item">Warnings</a>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+    <!-- STATS -->
+    <div class="section" id="stats">
+        <div class="section-head">Overview</div>
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-value" id="s-warnings">—</div><div class="stat-label">Total Warnings</div></div>
+            <div class="stat-card"><div class="stat-value" id="s-users">—</div><div class="stat-label">Warned Users</div></div>
+            <div class="stat-card"><div class="stat-value" id="s-tickets">—</div><div class="stat-label">Tickets Opened</div></div>
+            <div class="stat-card"><div class="stat-value" id="s-threshold">—</div><div class="stat-label">Skull Threshold</div></div>
+        </div>
+    </div>
+
+    <!-- GENERAL -->
+    <div class="section" id="general">
+        <div class="section-head">General Settings</div>
+        <div class="card">
+            <div class="field-row">
+                <div><div class="field-label">Prefix</div><div class="field-hint">Command prefix for the bot</div></div>
+                <input type="text" id="prefix" maxlength="5" placeholder="?">
+                <button class="btn btn-primary" onclick="save('prefix')">Save</button>
+            </div>
+            <div class="field-row">
+                <div><div class="field-label">Log Channel ID</div><div class="field-hint">Channel for moderation logs</div></div>
+                <input type="text" id="log_channel_id" placeholder="Channel ID">
+                <button class="btn btn-primary" onclick="save('log_channel_id')">Save</button>
+            </div>
+            <div class="field-row">
+                <div><div class="field-label">Authorized Role ID</div><div class="field-hint">Role that can use mod commands</div></div>
+                <input type="text" id="authorized_role_id" placeholder="Role ID">
+                <button class="btn btn-primary" onclick="save('authorized_role_id')">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODERATION -->
+    <div class="section" id="moderation">
+        <div class="section-head">Moderation — Warn Roles</div>
+        <div class="card">
+            <div class="field-row">
+                <div><div class="field-label">Warning 1 Role ID</div><div class="field-hint">Assigned on 1st warning</div></div>
+                <input type="text" id="warn_role_1" placeholder="Role ID">
+                <button class="btn btn-primary" onclick="save('warn_role_1')">Save</button>
+            </div>
+            <div class="field-row">
+                <div><div class="field-label">Warning 2 Role ID</div><div class="field-hint">Assigned on 2nd warning + mute</div></div>
+                <input type="text" id="warn_role_2" placeholder="Role ID">
+                <button class="btn btn-primary" onclick="save('warn_role_2')">Save</button>
+            </div>
+            <div class="field-row">
+                <div><div class="field-label">Warning 3 Role ID</div><div class="field-hint">Assigned on 3rd warning + kick</div></div>
+                <input type="text" id="warn_role_3" placeholder="Role ID">
+                <button class="btn btn-primary" onclick="save('warn_role_3')">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TICKETS -->
+    <div class="section" id="tickets">
+        <div class="section-head">Ticket Settings</div>
+        <div class="card">
+            <div class="field-row">
+                <div><div class="field-label">Support Role ID</div><div class="field-hint">Role that can see all tickets</div></div>
+                <input type="text" id="ticket_support_role_id" placeholder="Role ID">
+                <button class="btn btn-primary" onclick="save('ticket_support_role_id')">Save</button>
+            </div>
+            <div class="field-row">
+                <div><div class="field-label">Ticket Category ID</div><div class="field-hint">Category for ticket channels</div></div>
+                <input type="text" id="ticket_category_id" placeholder="Category ID">
+                <button class="btn btn-primary" onclick="save('ticket_category_id')">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SKULLBOARD -->
+    <div class="section" id="skullboard">
+        <div class="section-head">Skullboard Settings</div>
+        <div class="card">
+            <div class="field-row">
+                <div><div class="field-label">Skullboard Channel ID</div><div class="field-hint">Channel to post skulled messages</div></div>
+                <input type="text" id="skullboard_channel_id" placeholder="Channel ID">
+                <button class="btn btn-primary" onclick="save('skullboard_channel_id')">Save</button>
+            </div>
+            <div class="field-row">
+                <div><div class="field-label">Skull Threshold</div><div class="field-hint">💀 reactions needed to post</div></div>
+                <input type="number" id="skullboard_threshold" min="1" max="50" placeholder="3">
+                <button class="btn btn-primary" onclick="save('skullboard_threshold')">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WARNINGS -->
+    <div class="section" id="warnings">
+        <div class="section-head">Warning Records</div>
+        <div class="card">
+            <div id="warnings-body">
+                <div class="empty">Loading warnings...</div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+let cfg = {};
+
+async function loadConfig() {
+    const res = await fetch("/api/config");
+    cfg = await res.json();
+    const fields = ["prefix","log_channel_id","authorized_role_id","warn_role_1","warn_role_2","warn_role_3","ticket_support_role_id","ticket_category_id","skullboard_channel_id","skullboard_threshold"];
+    fields.forEach(k => {
+        const el = document.getElementById(k);
+        if (el) el.value = cfg[k] ?? "";
+    });
+}
+
+async function loadStats() {
+    const res = await fetch("/api/stats");
+    const d = await res.json();
+    document.getElementById("s-warnings").textContent  = d.total_warnings;
+    document.getElementById("s-users").textContent     = d.warned_users;
+    document.getElementById("s-tickets").textContent   = d.tickets;
+    document.getElementById("s-threshold").textContent = d.skullboard_threshold;
+}
+
+async function loadWarnings() {
+    const res = await fetch("/api/warnings");
+    const data = await res.json();
+    const body = document.getElementById("warnings-body");
+
+    if (!data.length) {
+        body.innerHTML = '<div class="empty">No active warnings.</div>';
+        return;
+    }
+
+    body.innerHTML = `
+        <table class="warn-table">
+            <thead><tr>
+                <th>User ID</th>
+                <th>Warnings</th>
+                <th></th>
+            </tr></thead>
+            <tbody id="warn-rows"></tbody>
+        </table>`;
+
+    const tbody = document.getElementById("warn-rows");
+    data.forEach(({ user_id, warnings }) => {
+        const entries = warnings.map((w, i) => `
+            <div class="warn-entry">
+                <div>
+                    <div class="warn-reason">${escHtml(w.reason)}</div>
+                    <div class="warn-by">by ${escHtml(w.moderator)}</div>
+                </div>
+                <button class="btn btn-danger btn-xs" onclick="deleteWarning('${user_id}', ${i})">Remove</button>
+            </div>`).join("");
+
+        const row = document.createElement("tr");
+        row.id = `row-${user_id}`;
+        row.innerHTML = `
+            <td>
+                <span class="mono">${user_id}</span>
+                <span class="badge" style="margin-left:0.4rem">${warnings.length}/3</span>
+            </td>
+            <td><div id="entries-${user_id}">${entries}</div></td>
+            <td><button class="btn btn-danger btn-xs" onclick="clearWarnings('${user_id}')">Clear All</button></td>`;
+        tbody.appendChild(row);
+    });
+}
+
+async function save(key) {
+    const el = document.getElementById(key);
+    const value = el.value.trim();
+    const res = await fetch("/api/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [key]: value })
+    });
+    const d = await res.json();
+    if (d.ok) {
+        el.classList.add("saved");
+        toast("Saved.", "ok");
+        setTimeout(() => el.classList.remove("saved"), 1500);
+        loadStats();
+    } else {
+        el.classList.add("error");
+        toast("Failed to save.", "err");
+        setTimeout(() => el.classList.remove("error"), 1500);
+    }
+}
+
+async function clearWarnings(userId) {
+    await fetch(`/api/warnings/${userId}/clear`, { method: "POST" });
+    toast("Warnings cleared.", "ok");
+    loadWarnings();
+    loadStats();
+}
+
+async function deleteWarning(userId, index) {
+    await fetch(`/api/warnings/${userId}/${index}`, { method: "DELETE" });
+    toast("Warning removed.", "ok");
+    loadWarnings();
+    loadStats();
+}
+
+function toast(msg, type) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.className = "show " + type;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.className = "", 2500);
+}
+
+function escHtml(s) {
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// Enter key saves focused field
+document.addEventListener("keydown", e => {
+    if (e.key === "Enter" && document.activeElement.tagName === "INPUT") {
+        const key = document.activeElement.id;
+        if (key) save(key);
+    }
+});
+
+loadConfig();
+loadStats();
+loadWarnings();
+setInterval(loadStats, 30000);
+</script>
+
+</body>
+</html>
