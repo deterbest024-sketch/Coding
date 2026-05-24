@@ -5,6 +5,7 @@ import sqlite3
 from datetime import datetime, timedelta
 from flask import Flask, render_template, jsonify
 import threading
+import json
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -15,6 +16,37 @@ bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 # Database setup
 DB_FILE = "moderation.db"
+CONFIG_FILE = "config.json"
+
+def load_config():
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, 'r') as f:
+            return json.load(f)
+    return {}
+
+def save_config(config):
+    with open(CONFIG_FILE, 'w') as f:
+        json.dump(config, f, indent=2)
+
+def get_guild_config(guild_id):
+    config = load_config()
+    return config.get(str(guild_id), {
+        "prefix": "!",
+        "logs_channel": None,
+        "admin_role": None
+    })
+
+def set_guild_config(guild_id, key, value):
+    config = load_config()
+    guild_id_str = str(guild_id)
+    if guild_id_str not in config:
+        config[guild_id_str] = {
+            "prefix": "!",
+            "logs_channel": None,
+            "admin_role": None
+        }
+    config[guild_id_str][key] = value
+    save_config(config)
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
@@ -97,6 +129,12 @@ async def help(ctx):
     )
     
     embed.add_field(
+        name="⚙️ Setup",
+        value="`!setup` - Configure bot settings (prefix, logs channel, admin role)",
+        inline=False
+    )
+    
+    embed.add_field(
         name="⚖️ Moderation",
         value="`!kick <member> [reason]` - Kick a member from server\n"
               "`!ban <member> [reason]` - Ban a member from server\n"
@@ -127,12 +165,122 @@ async def help(ctx):
               "• `ban` - Requires Ban Members\n"
               "• `mute/unmute` - Requires Moderate Members\n"
               "• `warn` - Requires Ban Members\n"
-              "• `modlogs` - Requires Ban Members",
+              "• `modlogs` - Requires Ban Members\n"
+              "• `setup` - Requires Administrator",
         inline=False
     )
     
     embed.set_footer(text="Use !command --help for more info on specific commands")
     await ctx.send(embed=embed)
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def setup(ctx):
+    config = get_guild_config(ctx.guild.id)
+    
+    embed = discord.Embed(
+        title="⚙️ Bot Setup",
+        description="React to configure bot settings",
+        color=discord.Color.green()
+    )
+    
+    prefix = config.get("prefix", "!")
+    logs_channel_id = config.get("logs_channel")
+    admin_role_id = config.get("admin_role")
+    
+    logs_channel_name = "Not set"
+    if logs_channel_id:
+        channel = ctx.guild.get_channel(logs_channel_id)
+        if channel:
+            logs_channel_name = f"#{channel.name}"
+    
+    admin_role_name = "Not set"
+    if admin_role_id:
+        role = ctx.guild.get_role(admin_role_id)
+        if role:
+            admin_role_name = f"@{role.name}"
+    
+    embed.add_field(name="Current Prefix", value=f"`{prefix}`", inline=False)
+    embed.add_field(name="Logs Channel", value=logs_channel_name, inline=False)
+    embed.add_field(name="Admin Role", value=admin_role_name, inline=False)
+    
+    embed.add_field(
+        name="Setup Options",
+        value="1️⃣ - Change prefix\n"
+              "2️⃣ - Set logs channel\n"
+              "3️⃣ - Set admin role\n"
+              "❌ - Cancel",
+        inline=False
+    )
+    
+    msg = await ctx.send(embed=embed)
+    await msg.add_reaction("1️⃣")
+    await msg.add_reaction("2️⃣")
+    await msg.add_reaction("3️⃣")
+    await msg.add_reaction("❌")
+    
+    def check(reaction, user):
+        return user == ctx.author and reaction.message.id == msg.id
+    
+    try:
+        reaction, user = await bot.wait_for('reaction_add', timeout=60.0, check=check)
+        
+        if reaction.emoji == "1️⃣":
+            await ctx.send("What should the new prefix be? (reply with a single character)")
+            
+            def check_msg(m):
+                return m.author == ctx.author and m.channel == ctx.channel
+            
+            try:
+                msg_prefix = await bot.wait_for('message', timeout=30.0, check=check_msg)
+                new_prefix = msg_prefix.content.strip()
+                if len(new_prefix) > 1:
+                    await ctx.send("❌ Prefix must be a single character!")
+                    return
+                set_guild_config(ctx.guild.id, "prefix", new_prefix)
+                await ctx.send(f"✅ Prefix changed to `{new_prefix}`")
+            except:
+                await ctx.send("❌ Setup cancelled (timeout)")
+        
+        elif reaction.emoji == "2️⃣":
+            await ctx.send("Mention the channel for moderation logs (e.g., #logs)")
+            
+            def check_msg(m):
+                return m.author == ctx.author and m.channel == ctx.channel
+            
+            try:
+                msg_channel = await bot.wait_for('message', timeout=30.0, check=check_msg)
+                if msg_channel.channel_mentions:
+                    channel = msg_channel.channel_mentions[0]
+                    set_guild_config(ctx.guild.id, "logs_channel", channel.id)
+                    await ctx.send(f"✅ Logs channel set to {channel.mention}")
+                else:
+                    await ctx.send("❌ Please mention a valid channel!")
+            except:
+                await ctx.send("❌ Setup cancelled (timeout)")
+        
+        elif reaction.emoji == "3️⃣":
+            await ctx.send("Mention the admin role (e.g., @Moderator)")
+            
+            def check_msg(m):
+                return m.author == ctx.author and m.channel == ctx.channel
+            
+            try:
+                msg_role = await bot.wait_for('message', timeout=30.0, check=check_msg)
+                if msg_role.role_mentions:
+                    role = msg_role.role_mentions[0]
+                    set_guild_config(ctx.guild.id, "admin_role", role.id)
+                    await ctx.send(f"✅ Admin role set to {role.mention}")
+                else:
+                    await ctx.send("❌ Please mention a valid role!")
+            except:
+                await ctx.send("❌ Setup cancelled (timeout)")
+        
+        elif reaction.emoji == "❌":
+            await ctx.send("❌ Setup cancelled")
+    
+    except:
+        await ctx.send("❌ Setup cancelled (timeout)")
 
 @bot.command()
 async def ping(ctx):
