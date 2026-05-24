@@ -11,7 +11,7 @@ intents.message_content = True
 intents.members = True
 intents.moderation = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 # Database setup
 DB_FILE = "moderation.db"
@@ -81,6 +81,58 @@ def run_flask():
 @bot.event
 async def on_ready():
     print(f"We have logged in as {bot.user}")
+
+@bot.command()
+async def help(ctx):
+    embed = discord.Embed(
+        title="📚 Bot Commands",
+        description="Here are all available commands:",
+        color=discord.Color.blue()
+    )
+    
+    embed.add_field(
+        name="🎮 General",
+        value="`!ping` - Check if bot is alive\n`!help` - Show this message",
+        inline=False
+    )
+    
+    embed.add_field(
+        name="⚖️ Moderation",
+        value="`!kick <member> [reason]` - Kick a member from server\n"
+              "`!ban <member> [reason]` - Ban a member from server\n"
+              "`!mute <member> <duration> [reason]` - Mute member for X seconds\n"
+              "`!unmute <member>` - Remove mute from member\n"
+              "`!warn <member> [reason]` - Warn a member",
+        inline=False
+    )
+    
+    embed.add_field(
+        name="📋 Logs",
+        value="`!modlogs [member]` - View moderation logs\n"
+              "  • No args: Show last 10 server actions\n"
+              "  • With member: Show last 10 actions on that member",
+        inline=False
+    )
+    
+    embed.add_field(
+        name="🌐 Dashboard",
+        value="View live moderation logs at: `http://your-domain:5000`\n"
+              "Auto-refreshes every 5 seconds",
+        inline=False
+    )
+    
+    embed.add_field(
+        name="📝 Permissions",
+        value="• `kick` - Requires Kick Members\n"
+              "• `ban` - Requires Ban Members\n"
+              "• `mute/unmute` - Requires Moderate Members\n"
+              "• `warn` - Requires Ban Members\n"
+              "• `modlogs` - Requires Ban Members",
+        inline=False
+    )
+    
+    embed.set_footer(text="Use !command --help for more info on specific commands")
+    await ctx.send(embed=embed)
 
 @bot.command()
 async def ping(ctx):
