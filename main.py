@@ -117,9 +117,20 @@ async def on_ready():
 @bot.command()
 async def help(ctx):
     embed = discord.Embed(
-        title="📚 Complete Bot Command List",
-        description="All available commands and features",
+        title="⚖️ Moderation Bot",
+        description="A comprehensive Discord moderation bot with logging, configuration, and a web dashboard.",
         color=discord.Color.blue()
+    )
+    
+    embed.add_field(
+        name="📖 About This Bot",
+        value="This bot provides complete server moderation tools including:\n"
+              "• Kick, ban, mute, and warn members\n"
+              "• Persistent moderation logs (SQLite database)\n"
+              "• Web dashboard to view all actions\n"
+              "• Per-server configuration (prefix, channels, roles)\n"
+              "• Real-time log tracking",
+        inline=False
     )
     
     # General Commands
